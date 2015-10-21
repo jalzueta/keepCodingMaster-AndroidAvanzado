@@ -3,4 +3,7 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="no_connection_dialog_title">No tienes conexión a Internet</string>
+    <string name="no_connection_dialog_message">Por favor, comprueba el estado de tu conexión a internet y vuélvelo a intentar</string>
+    <string name="no_connection_button_text">Ok</string>
 </resources>
