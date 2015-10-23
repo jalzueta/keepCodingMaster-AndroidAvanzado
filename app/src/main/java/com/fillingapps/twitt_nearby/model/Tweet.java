@@ -13,11 +13,11 @@ public class Tweet {
     private boolean hasCoordinates;
     private String address;
 
-    public Tweet(String userName, String text, double longitude, double latitude, Date creationDate) {
+    public Tweet(String userName, String text, double latitude, double longitude, Date creationDate) {
         this.userName = userName;
         this.text = text;
-        this.longitude = longitude;
         this.latitude = latitude;
+        this.longitude = longitude;
         this.creationDate = creationDate;
     }
 

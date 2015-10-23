@@ -55,4 +55,12 @@ public class TwittnearbyProviderHelper {
         Uri uri = Uri.parse(sUri);
         cr.delete(uri, null, null);
     }
+
+    public static void deleteAllTweets() {
+        ContentResolver cr = TwittnearbyApp.getAppContext().getContentResolver();
+
+        String sUri = TwittnearbyProvider.TWEETS_URI.toString();
+        Uri uri = Uri.parse(sUri);
+        cr.delete(uri, null, null);
+    }
 }

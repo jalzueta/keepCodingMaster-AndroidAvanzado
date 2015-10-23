@@ -27,6 +27,7 @@
         android:required="true" />
 
     <application
+        android:name=".TwittnearbyApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -60,6 +61,9 @@
         </activity>
 
         <!-- Content providers -->
+        <provider
+        android:name=".providers.TwittnearbyProvider"
+        android:authorities="com.fillingapps.twitt_nearby.provider" />
 
     </application>
 

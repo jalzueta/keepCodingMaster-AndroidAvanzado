@@ -34,4 +34,12 @@
         android:text="Query search"
         android:enabled="false"/>
 
+    <ListView
+        android:id="@+id/tweets_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/query_search_button">
+
+    </ListView>
+
 </RelativeLayout>

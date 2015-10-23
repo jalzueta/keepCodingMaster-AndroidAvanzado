@@ -1,5 +1,9 @@
 package com.fillingapps.twitt_nearby.activities;
 
+import android.app.LoaderManager;
+import android.content.CursorLoader;
+import android.content.Loader;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -7,11 +11,15 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 import com.fillingapps.twitt_nearby.R;
 import com.fillingapps.twitt_nearby.callbacks.OnInfoDialogCallback;
 import com.fillingapps.twitt_nearby.fragments.dialogs.InfoDialogFragment;
+import com.fillingapps.twitt_nearby.model.Tweet;
+import com.fillingapps.twitt_nearby.model.TweetParser;
+import com.fillingapps.twitt_nearby.model.dao.TweetDAO;
+import com.fillingapps.twitt_nearby.providers.TwittnearbyProvider;
+import com.fillingapps.twitt_nearby.providers.TwittnearbyProviderHelper;
 import com.fillingapps.twitt_nearby.utils.NetworkHelper;
 import com.fillingapps.twitt_nearby.utils.twitter.ConnectTwitterTask;
 import com.fillingapps.twitt_nearby.utils.twitter.TwitterHelper;
@@ -51,7 +59,9 @@ import twitter4j.auth.AccessToken;
 import twitter4j.auth.OAuth2Token;
 import twitter4j.auth.RequestToken;
 
-public class LoginActivity extends AppCompatActivity implements OnInfoDialogCallback, ConnectTwitterTask.OnConnectTwitterListener, TwitterListener{
+public class LoginActivity extends AppCompatActivity implements OnInfoDialogCallback, ConnectTwitterTask.OnConnectTwitterListener, TwitterListener, LoaderManager.LoaderCallbacks<Cursor>{
+
+    private static final String TAG = LoginActivity.class.getName();
 
     private ConnectTwitterTask twitterTask;
     private AsyncTwitter twitter;
@@ -119,6 +129,9 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
                 }
             }
         });
+
+        LoaderManager loader = getLoaderManager();
+        loader.initLoader(0, null, this);
     }
 
     protected void showInfoDialogFragment(int titleId, int messageId, int buttonTextId) {
@@ -168,6 +181,42 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
         querySearchButton.setEnabled(true);
     }
 
+    private void saveTweets(ResponseList<Status> statuses) {
+        Log.d(TAG, "Number of tweets received: " + statuses.size());
+        TwittnearbyProviderHelper.deleteAllTweets();
+        for (Status s : statuses) {
+            Tweet tweet = TweetParser.createTweet(s);
+            TwittnearbyProviderHelper.insertTweet(tweet);
+        }
+    }
+
+
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        // Creamos el cursor loader
+        CursorLoader loader = new CursorLoader(this, TwittnearbyProvider.TWEETS_URI, TweetDAO.allColumns, null, null, null);
+        return loader;
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        if (data != null) {
+            Log.d(TAG, "Number of tweets in DB: " + data.getCount());
+        } else {
+            Log.d(TAG, "Number of tweets in DB: 0");
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+
+    }
+
+
+
+
+
     @Override
     public void gotMentions(ResponseList<Status> statuses) {
 
@@ -175,16 +224,14 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
 
     @Override
     public void gotHomeTimeline(ResponseList<Status> statuses) {
-        for (Status s : statuses) {
-            Log.d("Twitter (Home)", "tweet: " + s.getText());
-        }
+        Log.d(TAG, "----------------------- (Home) -----------------------");
+        saveTweets(statuses);
     }
 
     @Override
     public void gotUserTimeline(ResponseList<Status> statuses) {
-        for (Status s : statuses) {
-            Log.d("Twitter (User)", "tweet: " + s.getText());
-        }
+        Log.d(TAG, "----------------------- (User) -----------------------");
+        saveTweets(statuses);
     }
 
     @Override
@@ -229,9 +276,8 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
 
     @Override
     public void searched(QueryResult queryResult) {
-        for (Status s : queryResult.getTweets()) {
-            Log.d("Twitter (searched)", "tweet: " + s.getText() + "; " + s.getGeoLocation());
-        }
+        Log.d(TAG, "----------------------- (Search) -----------------------");
+        saveTweets((ResponseList<Status>) queryResult.getTweets());
     }
 
     @Override

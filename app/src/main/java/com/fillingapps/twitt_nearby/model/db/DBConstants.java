@@ -23,7 +23,7 @@ public class DBConstants {
                     + KEY_TWEET_LATITUDE + " real,"
                     + KEY_TWEET_LONGITUDE + " real, "
                     + KEY_TWEET_HAS_COORDINATES + " INTEGER, "
-                    + KEY_TWEET_ADDRESS + " text, "
+                    + KEY_TWEET_ADDRESS + " text "
                     + ");";
 
     public static final String[] CREATE_DATABASE = {
