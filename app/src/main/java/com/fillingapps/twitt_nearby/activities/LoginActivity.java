@@ -79,6 +79,7 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
             twitterTask.execute();
         } else {
             showInfoDialogFragment(R.string.no_connection_dialog_title, R.string.no_connection_dialog_message, R.string.no_connection_button_text);
+            // TODO: load local Tweets from DB
         }
 
         userTimelineButton.setOnClickListener(new View.OnClickListener() {
@@ -107,7 +108,7 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
                     double lat = 42.794829;
                     double lon = -1.616343;
                     double radius = 10;
-                    String text = "#live";
+                    String textToSearch = "#live";
                     Query query = new Query();
                     query.setGeoCode(new GeoLocation(lat, lon), radius, Query.KILOMETERS);
                     query.count(10); //You can also set the number of tweets to return per page, up to a max of 100
@@ -139,6 +140,13 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
         int id = item.getItemId();
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onSearchRequested() {
+        Bundle appData = new Bundle();
+        startSearch(null, false, appData, false);
+        return true;
     }
 
     @Override
