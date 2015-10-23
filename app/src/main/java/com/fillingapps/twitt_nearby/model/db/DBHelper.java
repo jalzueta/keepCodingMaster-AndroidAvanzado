@@ -73,7 +73,7 @@ public class DBHelper extends SQLiteOpenHelper{
         }
     }
 
-    public static SQLiteDatabase getDb(DBHelper dbHelper) {
+    public static SQLiteDatabase getDB(DBHelper dbHelper) {
         SQLiteDatabase db = null;
         try {
             db = dbHelper.getWritableDatabase();

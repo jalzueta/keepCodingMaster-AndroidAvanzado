@@ -39,7 +39,7 @@ public class TweetDAO implements DAOPersistable<Tweet> {
             return DBHelper.INVALID_ID;
         }
         final DBHelper dbHelper = DBHelper.getInstance(context.get());
-        SQLiteDatabase db = DBHelper.getDb(dbHelper);
+        SQLiteDatabase db = DBHelper.getDB(dbHelper);
 
         db.beginTransaction();
         long id = DBHelper.INVALID_ID;
@@ -86,7 +86,7 @@ public class TweetDAO implements DAOPersistable<Tweet> {
             return;
         }
         final DBHelper dbHelper = DBHelper.getInstance(context.get());
-        SQLiteDatabase db = DBHelper.getDb(dbHelper);
+        SQLiteDatabase db = DBHelper.getDB(dbHelper);
 
         db.beginTransaction();
 
@@ -109,7 +109,7 @@ public class TweetDAO implements DAOPersistable<Tweet> {
     @Override
     public void delete(long id) {
         final DBHelper dbHelper = DBHelper.getInstance(context.get());
-        SQLiteDatabase db = DBHelper.getDb(dbHelper);
+        SQLiteDatabase db = DBHelper.getDB(dbHelper);
 
         if (id == DBHelper.INVALID_ID){
             // Borro todos los registros
@@ -138,7 +138,7 @@ public class TweetDAO implements DAOPersistable<Tweet> {
     @Override
     public Cursor queryCursor() {
         final DBHelper dbHelper = DBHelper.getInstance(context.get());
-        SQLiteDatabase db = DBHelper.getDb(dbHelper);
+        SQLiteDatabase db = DBHelper.getDB(dbHelper);
 
         // Ordenados por fecha de insercion (a traves del KEY_NOTEBOOK_ID)
         Cursor cursor = db.query(TABLE_TWEET, allColumns, null, null, null, null, KEY_TWEET_ID);
@@ -150,7 +150,7 @@ public class TweetDAO implements DAOPersistable<Tweet> {
         Tweet tweet = null;
 
         final DBHelper dbHelper = DBHelper.getInstance(context.get());
-        SQLiteDatabase db = DBHelper.getDb(dbHelper);
+        SQLiteDatabase db = DBHelper.getDB(dbHelper);
 
         final String whereClause = KEY_TWEET_ID + "=" + id;
         Cursor cursor = db.query(TABLE_TWEET, allColumns, whereClause, null, null, null, KEY_TWEET_ID);

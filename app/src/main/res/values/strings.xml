@@ -3,6 +3,8 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="log_twittnearby_starting">Twitt-near By is alive</string>
+    <string name="log_twittnearby_low_memory">Twitt-near By running low on memory</string>
 
     <string name="search_title">Search tweets</string>
     <string name="search_hint">Enter here a city / address</string>
