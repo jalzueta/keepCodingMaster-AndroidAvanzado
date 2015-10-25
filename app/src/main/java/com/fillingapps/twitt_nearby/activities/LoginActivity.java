@@ -1,15 +1,18 @@
 package com.fillingapps.twitt_nearby.activities;
 
 import android.app.LoaderManager;
+import android.app.SearchManager;
+import android.content.Context;
 import android.content.CursorLoader;
+import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Button;
 
 import com.fillingapps.twitt_nearby.R;
@@ -20,11 +23,15 @@ import com.fillingapps.twitt_nearby.model.TweetParser;
 import com.fillingapps.twitt_nearby.model.dao.TweetDAO;
 import com.fillingapps.twitt_nearby.providers.TwittnearbyProvider;
 import com.fillingapps.twitt_nearby.providers.TwittnearbyProviderHelper;
+import com.fillingapps.twitt_nearby.utils.GeneralUtils;
+import com.fillingapps.twitt_nearby.utils.GeolocationUtils;
 import com.fillingapps.twitt_nearby.utils.NetworkHelper;
 import com.fillingapps.twitt_nearby.utils.twitter.ConnectTwitterTask;
 import com.fillingapps.twitt_nearby.utils.twitter.TwitterHelper;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.lang.ref.WeakReference;
+import java.util.List;
 import java.util.Map;
 
 import butterknife.Bind;
@@ -66,19 +73,15 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
     private ConnectTwitterTask twitterTask;
     private AsyncTwitter twitter;
 
-    @Bind(R.id.user_timeline_button)
-    Button userTimelineButton;
-    @Bind(R.id.home_timeline_button)
-    Button homeTimelineButton;
-    @Bind(R.id.query_search_button)
-    Button querySearchButton;
+    //@Bind(R.id.action_search)
+    //Button searchButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        ButterKnife.bind(this);
+        //ButterKnife.bind(this);
 
         getSupportActionBar().setDisplayShowHomeEnabled(true);
 
@@ -92,46 +95,63 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
             // TODO: load local Tweets from DB
         }
 
-        userTimelineButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (twitter != null) {
-                    twitter.getUserTimeline();
-                }
-            }
-        });
-
-        homeTimelineButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (twitter != null) {
-                    twitter.getHomeTimeline();
-                }
-            }
-        });
-
-        querySearchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (twitter != null) {
-
-                    double lat = 42.794829;
-                    double lon = -1.616343;
-                    double radius = 10;
-                    String textToSearch = "#live";
-                    Query query = new Query();
-                    query.setGeoCode(new GeoLocation(lat, lon), radius, Query.KILOMETERS);
-                    query.count(10); //You can also set the number of tweets to return per page, up to a max of 100
-
-//                    Query query = new Query("#Live");
-//                    query.setCount(100);
-                    twitter.search(query);
-                }
-            }
-        });
-
         LoaderManager loader = getLoaderManager();
         loader.initLoader(0, null, this);
+
+        handleIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+
+        if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
+            String textToSearch = intent.getStringExtra(SearchManager.QUERY);
+
+            showResults(textToSearch);
+        }
+    }
+
+    private void showResults(String textToSearch) {
+        if (twitter != null) {
+            GeneralUtils.hideKeyboard(this);
+            requestTweetsInAddress(textToSearch);
+            //requestTweetsInHomeTimeline();
+        }
+    }
+
+    private void requestTweetsInHomeTimeline() {
+        twitter.getHomeTimeline();
+    }
+
+    private void requestTweetsInUserTimeline() {
+        twitter.getUserTimeline();
+    }
+
+    private void requestTweetsWithText(String textToSearch) {
+
+        Query query = new Query(textToSearch);
+        query.count(10); //You can also set the number of tweets to return per page, up to a max of 100
+        twitter.search(query);
+    }
+
+    private void requestTweetsInAddress(String addressToSearch) {
+
+        LatLng position = GeolocationUtils.getLocationFromAddress(this, addressToSearch);
+
+        double latitude = position.latitude; //42.794829;
+        double longitude = position.longitude; //-1.616343;
+        double radius = 100;
+        Query query = new Query();
+        query.setGeoCode(new GeoLocation(latitude, longitude), radius, Query.KILOMETERS);
+        Log.d(TAG, "latitude: " + latitude + "; longitude: " + longitude);
+        query.count(200); //You can also set the number of tweets to return per page, up to a max of 100
+        twitter.search(query);
     }
 
     protected void showInfoDialogFragment(int titleId, int messageId, int buttonTextId) {
@@ -140,10 +160,19 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
         dialog.show(getFragmentManager(), null);
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_login, menu);
+
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        MenuItem searchMenuItem = menu.findItem(R.id.action_search);
+        SearchView searchView = null;
+        if (searchMenuItem != null) {
+            searchView = (SearchView) searchMenuItem.getActionView();
+        }
+        if (searchView != null) {
+            searchView.setSearchableInfo(searchManager.getSearchableInfo(LoginActivity.this.getComponentName()));
+        }
 
         return super.onCreateOptionsMenu(menu);
     }
@@ -151,15 +180,12 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
+        if (id == R.id.action_search) {
+            onSearchRequested();
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public boolean onSearchRequested() {
-        Bundle appData = new Bundle();
-        startSearch(null, false, appData, false);
-        return true;
     }
 
     @Override
@@ -175,13 +201,9 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
     private void launchTwitter() {
         twitter = new TwitterHelper(this).getAsyncTwitter();
         twitter.addListener(this);
-
-        userTimelineButton.setEnabled(true);
-        homeTimelineButton.setEnabled(true);
-        querySearchButton.setEnabled(true);
     }
 
-    private void saveTweets(ResponseList<Status> statuses) {
+    private void saveTweets(List<Status> statuses) {
         Log.d(TAG, "Number of tweets received: " + statuses.size());
         TwittnearbyProviderHelper.deleteAllTweets();
         for (Status s : statuses) {
@@ -224,13 +246,13 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
 
     @Override
     public void gotHomeTimeline(ResponseList<Status> statuses) {
-        Log.d(TAG, "----------------------- (Home) -----------------------");
+        Log.d(TAG, "----------------------- (Home: " + statuses.size() + " results) -----------------------");
         saveTweets(statuses);
     }
 
     @Override
     public void gotUserTimeline(ResponseList<Status> statuses) {
-        Log.d(TAG, "----------------------- (User) -----------------------");
+        Log.d(TAG, "----------------------- (User: " + statuses.size() + " results) -----------------------");
         saveTweets(statuses);
     }
 
@@ -276,8 +298,9 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
 
     @Override
     public void searched(QueryResult queryResult) {
-        Log.d(TAG, "----------------------- (Search) -----------------------");
-        saveTweets((ResponseList<Status>) queryResult.getTweets());
+        Log.d(TAG, "----------------------- (Search: " + queryResult.getTweets().size() + " results) -----------------------");
+        List<Status> statuses = queryResult.getTweets();
+        saveTweets(statuses);
     }
 
     @Override

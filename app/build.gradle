@@ -33,6 +33,7 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:23.0.1'
     compile 'com.google.android.gms:play-services-maps:7.5.0'
+    compile 'com.google.android.gms:play-services-location:8.1.0'
     compile 'org.twitter4j:twitter4j-core:4.0.2'
     compile 'org.twitter4j:twitter4j-async:4.0.2'
     compile 'com.jakewharton:butterknife:7.0.1'
