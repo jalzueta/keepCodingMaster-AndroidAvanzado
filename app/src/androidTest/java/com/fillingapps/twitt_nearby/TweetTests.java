@@ -15,7 +15,7 @@ public class TweetTests extends AndroidTestCase {
     Date creationDate = new Date();
 
     public void testCanCreateANote() {
-        Tweet tweet = new Tweet(userName, text, latitud, longitude, creationDate);
+        Tweet tweet = new Tweet(userName, userImageUrl, text, latitud, longitude, creationDate);
 
         assertNotNull(tweet);
     }

@@ -161,7 +161,7 @@ public class TweetDAO implements DAOPersistable<Tweet> {
                 cursor.moveToFirst();
 
                 tweet = new Tweet(cursor.getString(cursor.getColumnIndex(KEY_TWEET_USERNAME)),
-                        cursor.getString(cursor.getColumnIndex(KEY_TWEET_TEXT)),
+                        userImageUrl, cursor.getString(cursor.getColumnIndex(KEY_TWEET_TEXT)),
                         cursor.getDouble(cursor.getColumnIndex(KEY_TWEET_LATITUDE)),
                         cursor.getDouble(cursor.getColumnIndex(KEY_TWEET_LONGITUDE)),
                         DBHelper.convertLongToDate(cursor.getLong(cursor.getColumnIndex(KEY_TWEET_CREATION_DATE))));

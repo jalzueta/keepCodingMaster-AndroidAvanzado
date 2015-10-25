@@ -26,7 +26,7 @@ public class TweetDAOTests extends ApplicationTest {
     }
 
     public void testInsertNotebookReturnsValidId(){
-        Tweet tweet = new Tweet(userName, text, latitud, longitude, creationDate);
+        Tweet tweet = new Tweet(userName, userImageUrl, text, latitud, longitude, creationDate);
 
         TweetDAO tweetDAO = new TweetDAO(getContext());
         long id = tweetDAO.insert(tweet);
@@ -49,7 +49,7 @@ public class TweetDAOTests extends ApplicationTest {
         TweetDAO tweetDAO = new TweetDAO(getContext());
 
         for (int i = 0; i < notebooksToInsert; i++){
-            final Tweet tweet = new Tweet(userName, text, latitud, longitude, creationDate);
+            final Tweet tweet = new Tweet(userName, userImageUrl, text, latitud, longitude, creationDate);
             final long id = tweetDAO.insert(tweet);
         }
     }

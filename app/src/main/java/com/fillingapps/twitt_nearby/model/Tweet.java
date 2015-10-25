@@ -6,6 +6,7 @@ public class Tweet {
 
     private long id;
     private String userName;
+    private String userImageUrl;
     private String text;
     private Date creationDate;
     private Double longitude;
@@ -13,8 +14,9 @@ public class Tweet {
     private boolean hasCoordinates;
     private String address;
 
-    public Tweet(String userName, String text, Double latitude, Double longitude, Date creationDate) {
+    public Tweet(String userName, String userImageUrl, String text, Double latitude, Double longitude, Date creationDate) {
         this.userName = userName;
+        this.userImageUrl = userImageUrl;
         this.text = text;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -83,5 +85,13 @@ public class Tweet {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getUserImageUrl() {
+        return userImageUrl;
+    }
+
+    public void setUserImageUrl(String userImageUrl) {
+        this.userImageUrl = userImageUrl;
     }
 }
