@@ -8,12 +8,12 @@ public class Tweet {
     private String userName;
     private String text;
     private Date creationDate;
-    private double longitude;
-    private double latitude;
+    private Double longitude;
+    private Double latitude;
     private boolean hasCoordinates;
     private String address;
 
-    public Tweet(String userName, String text, double latitude, double longitude, Date creationDate) {
+    public Tweet(String userName, String text, Double latitude, Double longitude, Date creationDate) {
         this.userName = userName;
         this.text = text;
         this.latitude = latitude;
@@ -53,19 +53,19 @@ public class Tweet {
         this.creationDate = creationDate;
     }
 
-    public double getLongitude() {
+    public Double getLongitude() {
         return longitude;
     }
 
-    public void setLongitude(double longitude) {
+    public void setLongitude(Double longitude) {
         this.longitude = longitude;
     }
 
-    public double getLatitude() {
+    public Double getLatitude() {
         return latitude;
     }
 
-    public void setLatitude(double latitude) {
+    public void setLatitude(Double latitude) {
         this.latitude = latitude;
     }
 

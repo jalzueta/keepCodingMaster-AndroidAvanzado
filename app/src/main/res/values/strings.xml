@@ -17,4 +17,9 @@
     <string name="no_connection_dialog_title">No tienes conexión a Internet</string>
     <string name="no_connection_dialog_message">Por favor, comprueba el estado de tu conexión a internet y vuélvelo a intentar</string>
     <string name="no_connection_button_text">Ok</string>
+
+    <string name="location_request_dialog_title">Solicitud de posición</string>
+    <string name="location_request_dialog_message">Necesitamos conocer tu posición para poder seleccionar los Tweets que se han escrito cerca de ti!</string>
+    <string name="location_request_button_text">Ok</string>
+    <string name="my_location_title">Load Tweets next to me</string>
 </resources>

@@ -9,16 +9,13 @@ public class TweetParser {
     public static Tweet createTweet(Status status) {
         String userName = status.getUser().getName();
         String text = status.getText();
-        Double latitude = Double.MIN_VALUE;
-        Double longitude = Double.MIN_VALUE;
-        if (status.getGeoLocation() != null) {
-            latitude = status.getGeoLocation().getLatitude();
-            longitude = status.getGeoLocation().getLongitude();
+        if (status.getGeoLocation() == null) {
+            return null;
         }
+        Double latitude = status.getGeoLocation().getLatitude();
+        Double longitude = status.getGeoLocation().getLongitude();
         Date creationDate = new Date();
-        Tweet tweet = new Tweet(userName, text, latitude, longitude, creationDate);
-
-        return tweet;
+        return new Tweet(userName, text, latitude, longitude, creationDate);
     }
 
 }

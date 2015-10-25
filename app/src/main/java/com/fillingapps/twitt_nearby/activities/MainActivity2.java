@@ -1,19 +1,32 @@
 package com.fillingapps.twitt_nearby.activities;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.LoaderManager;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.location.Criteria;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
+import android.view.View;
+import android.widget.Toast;
 
 import com.fillingapps.twitt_nearby.R;
 import com.fillingapps.twitt_nearby.callbacks.OnInfoDialogCallback;
@@ -28,9 +41,12 @@ import com.fillingapps.twitt_nearby.utils.GeolocationUtils;
 import com.fillingapps.twitt_nearby.utils.NetworkHelper;
 import com.fillingapps.twitt_nearby.utils.twitter.ConnectTwitterTask;
 import com.fillingapps.twitt_nearby.utils.twitter.TwitterHelper;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.lang.ref.WeakReference;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +59,6 @@ import twitter4j.DirectMessage;
 import twitter4j.Friendship;
 import twitter4j.GeoLocation;
 import twitter4j.IDs;
-import twitter4j.Location;
 import twitter4j.OEmbed;
 import twitter4j.PagableResponseList;
 import twitter4j.Place;
@@ -66,24 +81,35 @@ import twitter4j.auth.AccessToken;
 import twitter4j.auth.OAuth2Token;
 import twitter4j.auth.RequestToken;
 
-public class LoginActivity extends AppCompatActivity implements OnInfoDialogCallback, ConnectTwitterTask.OnConnectTwitterListener, TwitterListener, LoaderManager.LoaderCallbacks<Cursor>{
+public class MainActivity2 extends AppCompatActivity implements OnInfoDialogCallback, ConnectTwitterTask.OnConnectTwitterListener, TwitterListener, LoaderManager.LoaderCallbacks<Cursor>, LocationListener {
 
-    private static final String TAG = LoginActivity.class.getName();
+    private static final String TAG = MainActivity2.class.getName();
 
     private ConnectTwitterTask twitterTask;
     private AsyncTwitter twitter;
 
-    //@Bind(R.id.action_search)
-    //Button searchButton;
+    @Bind(R.id.my_position_button)
+    FloatingActionButton mFloatingActionButton;
 
+    private MapFragment mMapFragment;
+    private GoogleMap map;
+    private LocationManager mLocationManager;
+    private android.location.Location mLocation;
+
+    private Cursor tweetsCursor;
+
+    @TargetApi(Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
+        setContentView(R.layout.activity_main);
 
-        //ButterKnife.bind(this);
+        ButterKnife.bind(this);
 
         getSupportActionBar().setDisplayShowHomeEnabled(true);
+
+        // Handle intents from SearchBar
+        handleIntent(getIntent());
 
         if (NetworkHelper.isNetworkConnectionOK(new WeakReference<>(getApplication()))) {
             twitterTask = new ConnectTwitterTask(this);
@@ -93,12 +119,119 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
         } else {
             showInfoDialogFragment(R.string.no_connection_dialog_title, R.string.no_connection_dialog_message, R.string.no_connection_button_text);
             // TODO: load local Tweets from DB
+            tweetsCursor = TwittnearbyProviderHelper.getAllTweets();
         }
 
         LoaderManager loader = getLoaderManager();
         loader.initLoader(0, null, this);
 
-        handleIntent(getIntent());
+        configureMap();
+        configureFloatingActionButton();
+        configureLocationManager();
+    }
+
+    private void configureMap() {
+        mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+        if (mMapFragment != null) {
+            map = mMapFragment.getMap();
+        }
+        if (map == null) {
+            Toast.makeText(this, "Map died", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void configureFloatingActionButton() {
+        if (mFloatingActionButton != null) {
+            mFloatingActionButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(mLocation != null) {
+                        requestTweetsInLocation(mLocation, 100, 200);
+                    } else{
+                        hideFloatingActionButton();
+                        showInfoDialogFragment(R.string.location_request_dialog_title, R.string.location_request_dialog_message, R.string.location_request_button_text);
+                    }
+                }
+            });
+            hideFloatingActionButton();
+        }
+    }
+
+    private void configureLocationManager() {
+        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        if ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) && (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)) {
+            requestPositionsPermissionsIfNeeded();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        //Choosing the best criteria depending on what is available.
+        Criteria criteria = new Criteria();
+        String provider = mLocationManager.getBestProvider(criteria, false);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    public void requestPermissions(@NonNull String[] permissions, int requestCode)
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for Activity#requestPermissions for more details.
+        }
+        android.location.Location location = mLocationManager.getLastKnownLocation(provider);
+        if (location != null && location.getTime() > Calendar.getInstance().getTimeInMillis() - 2 * 60 * 1000) {
+            mLocation = location;
+            showFloatingActionButton();
+        } else {
+            mLocationManager.requestLocationUpdates(provider, 1000, 1, this);
+        }
+    }
+
+    private void showFloatingActionButton() {
+        Handler showAddButton = new Handler();
+        showAddButton.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (mFloatingActionButton != null) {
+                    mFloatingActionButton.show();
+                }
+            }
+        }, 2000);
+    }
+
+    private void hideFloatingActionButton() {
+        mFloatingActionButton.setVisibility(View.INVISIBLE);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        MenuItem searchMenuItem = menu.findItem(R.id.action_search);
+        SearchView searchView = null;
+        if (searchMenuItem != null) {
+            searchView = (SearchView) searchMenuItem.getActionView();
+        }
+        if (searchView != null) {
+            searchView.setSearchableInfo(searchManager.getSearchableInfo(MainActivity2.this.getComponentName()));
+        }
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_search) {
+            onSearchRequested();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -120,9 +253,16 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
     private void showResults(String textToSearch) {
         if (twitter != null) {
             GeneralUtils.hideKeyboard(this);
-            requestTweetsInAddress(textToSearch);
-            //requestTweetsInHomeTimeline();
+            requestTweetsInAddress(textToSearch, 100, 200);
         }
+    }
+
+    private void requestPositionsPermissionsIfNeeded() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+            showInfoDialogFragment(R.string.location_request_dialog_title, R.string.location_request_dialog_message, R.string.location_request_button_text);
+        }
+        String permissions[] = new String[] {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
+        ActivityCompat.requestPermissions(this, permissions, PackageManager.PERMISSION_GRANTED);
     }
 
     private void requestTweetsInHomeTimeline() {
@@ -140,17 +280,27 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
         twitter.search(query);
     }
 
-    private void requestTweetsInAddress(String addressToSearch) {
+    private void requestTweetsInAddress(String addressToSearch, int radiusInKm, int maxNumberOfTweets) {
 
         LatLng position = GeolocationUtils.getLocationFromAddress(this, addressToSearch);
-
         double latitude = position.latitude; //42.794829;
         double longitude = position.longitude; //-1.616343;
-        double radius = 100;
+
+        launchTweetSearch(radiusInKm, maxNumberOfTweets, latitude, longitude);
+    }
+
+    private void requestTweetsInLocation(android.location.Location location, int radiusInKm, int maxNumberOfTweets) {
+
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
+
+        launchTweetSearch(radiusInKm, maxNumberOfTweets, latitude, longitude);
+    }
+
+    private void launchTweetSearch(int radiusInKm, int maxNumberOfTweets, double latitude, double longitude) {
         Query query = new Query();
-        query.setGeoCode(new GeoLocation(latitude, longitude), radius, Query.KILOMETERS);
-        Log.d(TAG, "latitude: " + latitude + "; longitude: " + longitude);
-        query.count(200); //You can also set the number of tweets to return per page, up to a max of 100
+        query.setGeoCode(new GeoLocation(latitude, longitude), radiusInKm, Query.KILOMETERS);
+        query.count(maxNumberOfTweets);
         twitter.search(query);
     }
 
@@ -158,34 +308,6 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
         InfoDialogFragment dialog = InfoDialogFragment.newInstance(titleId, messageId, buttonTextId);
         dialog.setOnInfoDialogCallback(this);
         dialog.show(getFragmentManager(), null);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_login, menu);
-
-        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        MenuItem searchMenuItem = menu.findItem(R.id.action_search);
-        SearchView searchView = null;
-        if (searchMenuItem != null) {
-            searchView = (SearchView) searchMenuItem.getActionView();
-        }
-        if (searchView != null) {
-            searchView.setSearchableInfo(searchManager.getSearchableInfo(LoginActivity.this.getComponentName()));
-        }
-
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.action_search) {
-            onSearchRequested();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -213,7 +335,6 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
     }
 
 
-
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         // Creamos el cursor loader
@@ -224,9 +345,16 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         if (data != null) {
-            Log.d(TAG, "Number of tweets in DB: " + data.getCount());
-        } else {
-            Log.d(TAG, "Number of tweets in DB: 0");
+            tweetsCursor = data;
+            showTweetsInMap(data);
+            Log.d(TAG, "Number of tweets in DB: " + tweetsCursor.getCount());
+        }
+    }
+
+    private void showTweetsInMap(Cursor tweetsCursor) {
+        //TODO: show tweets in map
+        while (tweetsCursor.moveToNext()) {
+            //MapUtils.addMarker(map, );
         }
     }
 
@@ -234,9 +362,6 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
     public void onLoaderReset(Loader<Cursor> loader) {
 
     }
-
-
-
 
 
     @Override
@@ -654,12 +779,12 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
     }
 
     @Override
-    public void gotAvailableTrends(ResponseList<Location> locations) {
+    public void gotAvailableTrends(ResponseList<twitter4j.Location> locations) {
 
     }
 
     @Override
-    public void gotClosestTrends(ResponseList<Location> locations) {
+    public void gotClosestTrends(ResponseList<twitter4j.Location> locations) {
 
     }
 
@@ -710,6 +835,35 @@ public class LoginActivity extends AppCompatActivity implements OnInfoDialogCall
 
     @Override
     public void onException(TwitterException te, TwitterMethod method) {
+
+    }
+
+
+
+    @SuppressLint("NewApi")
+    @Override
+    public void onLocationChanged(android.location.Location location) {
+        mLocation = location;
+        showFloatingActionButton();
+        if (ContextCompat.checkSelfPermission(MainActivity2.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(MainActivity2.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPositionsPermissionsIfNeeded();
+            return;
+        }
+        mLocationManager.removeUpdates(this);
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
 
     }
 }
