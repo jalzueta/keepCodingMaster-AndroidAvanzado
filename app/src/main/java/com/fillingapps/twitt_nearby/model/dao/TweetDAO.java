@@ -20,7 +20,7 @@ public class TweetDAO implements DAOPersistable<Tweet> {
     private final WeakReference<Context> context;
     public static final String[] allColumns = {
             KEY_TWEET_ID,
-            KEY_TWEET_USERNAME,
+            KEY_TWEET_USER_NAME,
             KEY_TWEET_TEXT,
             KEY_TWEET_CREATION_DATE,
             KEY_TWEET_LATITUDE,
@@ -67,7 +67,7 @@ public class TweetDAO implements DAOPersistable<Tweet> {
         }
 
         ContentValues contentValues = new ContentValues();
-        contentValues.put(KEY_TWEET_USERNAME, data.getUserName());
+        contentValues.put(KEY_TWEET_USER_NAME, data.getUserName());
         contentValues.put(KEY_TWEET_TEXT, data.getText());
         contentValues.put(KEY_TWEET_CREATION_DATE, DBHelper.convertDateToLong(data.getCreationDate()));
         contentValues.put(KEY_TWEET_LATITUDE, String.format("%f", data.getLatitude()));
@@ -160,8 +160,9 @@ public class TweetDAO implements DAOPersistable<Tweet> {
                 // Nos movemos al primer registro del cursor (inicialmente está en una posicion "beforeFirst")
                 cursor.moveToFirst();
 
-                tweet = new Tweet(cursor.getString(cursor.getColumnIndex(KEY_TWEET_USERNAME)),
-                        userImageUrl, cursor.getString(cursor.getColumnIndex(KEY_TWEET_TEXT)),
+                tweet = new Tweet(cursor.getString(cursor.getColumnIndex(KEY_TWEET_USER_NAME)),
+                        cursor.getString(cursor.getColumnIndex(KEY_TWEET_USER_IMAGE_URL)),
+                        cursor.getString(cursor.getColumnIndex(KEY_TWEET_TEXT)),
                         cursor.getDouble(cursor.getColumnIndex(KEY_TWEET_LATITUDE)),
                         cursor.getDouble(cursor.getColumnIndex(KEY_TWEET_LONGITUDE)),
                         DBHelper.convertLongToDate(cursor.getLong(cursor.getColumnIndex(KEY_TWEET_CREATION_DATE))));

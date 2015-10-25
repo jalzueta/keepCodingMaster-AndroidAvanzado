@@ -47,7 +47,7 @@ public class TwitterHelper {
 		if (uri != null && uri.toString().startsWith(TwitterConsts.CALLBACK_URL)) {
 			String verifier = uri.getQueryParameter(TwitterConsts.IEXTRA_OAUTH_VERIFIER);
 			try { 
-				AccessToken accessToken = twitter.getOAuthAccessToken(requestToken, verifier);
+				AccessToken accessToken = twitter.getOAuthAccessToken(requestToken, verifier); 
 				Editor ed = sharedPreferences.edit();
 				ed.putString(TwitterConsts.PREF_KEY_TOKEN, accessToken.getToken()); 
 				ed.putString(TwitterConsts.PREF_KEY_SECRET, accessToken.getTokenSecret()); 
@@ -128,7 +128,7 @@ public class TwitterHelper {
         static final String PREF_KEY_SECRET = "oauth_token_secret";
         static final String PREF_KEY_TOKEN = "oauth_token";
 
-        static final String CALLBACK_URL = "oauth://t4jsample";
+        public static final String CALLBACK_URL = "oauth://t4jsample";
 
         static final String IEXTRA_AUTH_URL = "auth_url";
         static final String IEXTRA_OAUTH_VERIFIER = "oauth_verifier";

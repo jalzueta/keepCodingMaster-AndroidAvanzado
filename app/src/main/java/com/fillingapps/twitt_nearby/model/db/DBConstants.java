@@ -7,7 +7,8 @@ public class DBConstants {
 
     // Tweets Table field constants
     public static final String KEY_TWEET_ID = "_id";
-    public static final String KEY_TWEET_USERNAME = "userName";
+    public static final String KEY_TWEET_USER_NAME = "userName";
+    public static final String KEY_TWEET_USER_IMAGE_URL = "userImageUrl";
     public static final String KEY_TWEET_TEXT = "text";
     public static final String KEY_TWEET_CREATION_DATE = "creationDate";
     public static final String KEY_TWEET_LATITUDE = "latitude";
@@ -17,7 +18,8 @@ public class DBConstants {
     public static final String SQL_CREATE_TWEET_TABLE =
             "create table "
                     + TABLE_TWEET + "( " + KEY_TWEET_ID + " integer primary key autoincrement, "
-                    + KEY_TWEET_USERNAME + " text not null,"
+                    + KEY_TWEET_USER_NAME + " text not null,"
+                    + KEY_TWEET_USER_IMAGE_URL + " text,"
                     + KEY_TWEET_TEXT + " text not null,"
                     + KEY_TWEET_CREATION_DATE + " INTEGER, "
                     + KEY_TWEET_LATITUDE + " real,"

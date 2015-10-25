@@ -10,21 +10,25 @@ import android.widget.Toast;
 
 import com.fillingapps.twitt_nearby.R;
 
-
 public class ConnectTwitterTask extends AsyncTask<Void, Void, Void> {
 	private Activity context;
 	private Uri uri;
     private OnConnectTwitterListener listener;
 	
 	public ConnectTwitterTask(Activity context) {
-		this.context = context;
+        this.context = context;
         if (context != null) {
             Intent i = context.getIntent();
             if (i != null) {
                 this.uri = i.getData();
             }
         }
-	}
+    }
+
+    public ConnectTwitterTask(Activity context, Uri uri) {
+        this.context = context;
+        this.uri = uri;
+    }
 	
 	@Override
 	protected void onPreExecute() {

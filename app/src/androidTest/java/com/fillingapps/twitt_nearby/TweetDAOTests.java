@@ -11,6 +11,7 @@ import java.util.Date;
 public class TweetDAOTests extends ApplicationTest {
 
     String userName = "userName";
+    String userImageUrl = "userImageUrl";
     String text = "texto del tweet, menos de 140 caracteres";
     Double latitud = 42.6745;
     Double longitude = -1.61534;

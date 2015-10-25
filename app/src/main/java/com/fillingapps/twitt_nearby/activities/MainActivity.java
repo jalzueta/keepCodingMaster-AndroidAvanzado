@@ -14,6 +14,7 @@ import android.database.Cursor;
 import android.location.Criteria;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -39,8 +40,8 @@ import com.fillingapps.twitt_nearby.providers.TwittnearbyProviderHelper;
 import com.fillingapps.twitt_nearby.utils.GeneralUtils;
 import com.fillingapps.twitt_nearby.utils.GeolocationUtils;
 import com.fillingapps.twitt_nearby.utils.NetworkHelper;
-import com.fillingapps.twitt_nearby.utils.twitter.ConnectTwitterTask;
 import com.fillingapps.twitt_nearby.utils.MapUtils;
+import com.fillingapps.twitt_nearby.utils.twitter.ConnectTwitterTask;
 import com.fillingapps.twitt_nearby.utils.twitter.TwitterHelper;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -82,7 +83,7 @@ import twitter4j.auth.AccessToken;
 import twitter4j.auth.OAuth2Token;
 import twitter4j.auth.RequestToken;
 
-public class MainActivity extends AppCompatActivity implements OnInfoDialogCallback, ConnectTwitterTask.OnConnectTwitterListener, TwitterListener, LoaderManager.LoaderCallbacks<Cursor>, LocationListener {
+public class MainActivity extends AppCompatActivity implements OnInfoDialogCallback, TwitterListener, ConnectTwitterTask.OnConnectTwitterListener, LoaderManager.LoaderCallbacks<Cursor>, LocationListener {
 
     private static final String TAG = MainActivity.class.getName();
 
@@ -248,13 +249,30 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
             String textToSearch = intent.getStringExtra(SearchManager.QUERY);
 
             showResults(textToSearch);
+        } else{
+            final Uri uri = intent.getData();
+            if (uri != null && uri.toString().indexOf(TwitterHelper.TwitterConsts.CALLBACK_URL) != -1) {
+                Log.d(getString(R.string.app_name), "Retrieving Access Token. Callback received : " + uri);
+                twitterTask = new ConnectTwitterTask(this, uri);
+                twitterTask.setListener(this);
+
+                twitterTask.execute();
+            }
         }
+    }
+
+    @Override
+    public void twitterConnectionFinished() {
+        Toast.makeText(MainActivity.this, getString(R.string.twitter_auth_ok), Toast.LENGTH_SHORT).show();
+        launchTwitter();
     }
 
     private void showResults(String textToSearch) {
         if (twitter != null) {
             GeneralUtils.hideKeyboard(this);
             requestTweetsInAddress(textToSearch, 20, 50);
+        } else {
+            Toast.makeText(this, "Twitter session not started", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -316,11 +334,6 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
         dialog.dismiss();
     }
 
-    @Override
-    public void twitterConnectionFinished() {
-        launchTwitter();
-    }
-
     private void launchTwitter() {
         twitter = new TwitterHelper(this).getAsyncTwitter();
         twitter.addListener(this);
@@ -360,7 +373,7 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
             Double latitude = tweetsCursor.getDouble(tweetsCursor.getColumnIndex("latitude"));
             Double longitude = tweetsCursor.getDouble(tweetsCursor.getColumnIndex("longitude"));
             if (latitude != Double.MIN_VALUE && longitude != Double.MIN_VALUE) {
-                MapUtils.addMarker(map, latitude, longitude, title, snippet, null);
+                MapUtils.addMarker(this, map, latitude, longitude, title, snippet, null);
             }
         }
     }

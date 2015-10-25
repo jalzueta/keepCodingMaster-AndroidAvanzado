@@ -3,6 +3,6 @@
 package com.fillingapps.twitt_nearby.utils.twitter;
 
 public class TwitterPrivateKeyAndSecret {
-    static String CONSUMER_KEY = "l40Xhs6l2lWfjbBuxzoAAe3gc";
-    static String CONSUMER_SECRET = "XqQ9SKgbXzzsiVnBeU5VJ0qkTXjtUFjHwkZARjGR3YQuqO3IJ3";
+    static String CONSUMER_KEY = "ofS23ealzD2HrlRoln6xdyQUQ";
+    static String CONSUMER_SECRET = "dmfOZL8sZGKBb3gpWdGo6HCxHjaMkMw3vUtbKgBpkQo5kkkVuR";
 }
