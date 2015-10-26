@@ -1,6 +1,5 @@
 package com.fillingapps.twittnearby.activities;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.LoaderManager;
@@ -8,19 +7,14 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.Loader;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
@@ -47,6 +41,11 @@ import com.fillingapps.twittnearby.utils.MapUtils;
 import com.fillingapps.twittnearby.utils.SharedPreferencesUtils;
 import com.fillingapps.twittnearby.utils.twitter.ConnectTwitterTask;
 import com.fillingapps.twittnearby.utils.twitter.TwitterHelper;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
@@ -89,10 +88,15 @@ import twitter4j.auth.AccessToken;
 import twitter4j.auth.OAuth2Token;
 import twitter4j.auth.RequestToken;
 
-public class MainActivity extends AppCompatActivity implements OnInfoDialogCallback, TwitterListener, ConnectTwitterTask.OnConnectTwitterListener, LoaderManager.LoaderCallbacks<Cursor>, OnMarkerImageDownloadedCallback, LocationListener {
+public class MainActivity extends AppCompatActivity implements OnInfoDialogCallback, TwitterListener, ConnectTwitterTask.OnConnectTwitterListener, LoaderManager.LoaderCallbacks<Cursor>, OnMarkerImageDownloadedCallback, GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
     private static final String TAG = MainActivity.class.getName();
     private static final int ZOOM = 12;
+    private static final int RADIUS = 20;
+    private static final int NUMBER_OF_TWEETS = 50;
+
+    private final static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 9000;
 
     private ConnectTwitterTask twitterTask;
     private AsyncTwitter twitter;
@@ -102,8 +106,9 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
 
     private MapFragment mMapFragment;
     private GoogleMap map;
-    private LocationManager mLocationManager;
     private android.location.Location mLocation;
+    private GoogleApiClient mGoogleApiClient;
+    private LocationRequest mLocationRequest;
 
     private Cursor tweetsCursor;
 
@@ -123,7 +128,8 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
 
         configureMap();
         configureFloatingActionButton();
-        configureLocationManager();
+        configureGoogleApiClient();
+        configureLocationRequest();
 
         if (NetworkHelper.isNetworkConnectionOK(new WeakReference<>(getApplication()))) {
             twitterTask = new ConnectTwitterTask(this);
@@ -140,6 +146,16 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
     @Override
     protected void onResume() {
         super.onResume();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mGoogleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+            mGoogleApiClient.disconnect();
+        }
     }
 
     @Override
@@ -201,6 +217,7 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
         mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         if (mMapFragment != null) {
             map = mMapFragment.getMap();
+            map.setMyLocationEnabled(true);
         }
         if (map == null) {
             Toast.makeText(this, "Map died", Toast.LENGTH_LONG).show();
@@ -213,7 +230,7 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
                 @Override
                 public void onClick(View v) {
                     if(mLocation != null) {
-                        requestTweetsInLocation(mLocation, 100, 200);
+                        requestTweetsInLocation(mLocation, RADIUS, NUMBER_OF_TWEETS);
                     } else{
                         hideFloatingActionButton();
                         showInfoDialogFragment(R.string.location_request_dialog_title, R.string.location_request_dialog_message, R.string.location_request_button_text);
@@ -224,12 +241,21 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
         }
     }
 
-    private void configureLocationManager() {
-        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) && (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)) {
-            requestPositionsPermissionsIfNeeded();
-        }
+    private void configureGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
     }
+
+    private void configureLocationRequest() {
+        mLocationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(10 * 1000)        // 10 seconds, in milliseconds
+                .setFastestInterval(1 * 1000); // 1 second, in milliseconds
+    }
+
     //endregion
 
     //region Group: Floating Action Button
@@ -269,7 +295,7 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
     private void showResults(String textToSearch) {
         if (twitter != null) {
             GeneralUtils.hideKeyboard(this);
-            requestTweetsInAddress(textToSearch, 20, 50);
+            requestTweetsInAddress(textToSearch, RADIUS, NUMBER_OF_TWEETS);
         } else {
             Toast.makeText(this, "Twitter session not started", Toast.LENGTH_LONG).show();
         }
@@ -298,7 +324,6 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
 
         MapUtils.centerMap(map, latitude, longitude, ZOOM);
         launchTweetSearch(radiusInKm, maxNumberOfTweets, latitude, longitude);
-        SharedPreferencesUtils.savePrefCenterLocation(this, latitude, longitude);
     }
 
     private void requestTweetsInLocation(android.location.Location location, int radiusInKm, int maxNumberOfTweets) {
@@ -310,6 +335,7 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
     }
 
     private void launchTweetSearch(int radiusInKm, int maxNumberOfTweets, double latitude, double longitude) {
+        SharedPreferencesUtils.savePrefCenterLocation(this, latitude, longitude);
         Query query = new Query();
         query.setGeoCode(new GeoLocation(latitude, longitude), radiusInKm, Query.KILOMETERS);
         query.count(maxNumberOfTweets);
@@ -358,14 +384,6 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
         MarkerOptions marker = new MarkerOptions().position(position).title(tweet.getUserName()).snippet(tweet.getText());
         marker.icon(bitmapDescriptor);
         map.addMarker(marker);
-    }
-
-    private void requestPositionsPermissionsIfNeeded() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-            showInfoDialogFragment(R.string.location_request_dialog_title, R.string.location_request_dialog_message, R.string.location_request_button_text);
-        }
-        String permissions[] = new String[] {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
-        ActivityCompat.requestPermissions(this, permissions, PackageManager.PERMISSION_GRANTED);
     }
 
     //region Group: LoaderCallbacks
@@ -881,32 +899,51 @@ public class MainActivity extends AppCompatActivity implements OnInfoDialogCallb
     }
     //endregion
 
+    //region Group: GoogleApiClient Connection Callbacks
+    @Override
+    public void onConnected(Bundle bundle) {
+        Log.i(TAG, "Location services connected.");
+        android.location.Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        if (location == null) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+        }
+        else {
+            handleNewLocation(location);
+        }
+    }
+
+    private void handleNewLocation(android.location.Location location) {
+        Log.d(TAG, location.toString());
+        mLocation = location;
+        showFloatingActionButton();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.i(TAG, "Location services suspended. Please reconnect.");
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        if (connectionResult.hasResolution()) {
+            try {
+                // Start an Activity that tries to resolve the error
+                connectionResult.startResolutionForResult(this, CONNECTION_FAILURE_RESOLUTION_REQUEST);
+            } catch (IntentSender.SendIntentException e) {
+                e.printStackTrace();
+            }
+        } else {
+            Log.i(TAG, "Location services connection failed with code " + connectionResult.getErrorCode());
+        }
+    }
+    //endregion
+
     //region Group: LocationListener
     @SuppressLint("NewApi")
     @Override
     public void onLocationChanged(android.location.Location location) {
-        mLocation = location;
-        showFloatingActionButton();
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestPositionsPermissionsIfNeeded();
-            return;
-        }
-        mLocationManager.removeUpdates(this);
+        handleNewLocation(location);
     }
 
-    @Override
-    public void onProviderDisabled(String provider) {
-
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-
-    }
     //endregion
 }

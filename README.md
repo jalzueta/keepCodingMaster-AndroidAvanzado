@@ -14,8 +14,8 @@ KeepCoding Startup Engineering Master Boot Camp
 	- Lectura de Tweets de la BD mediante Conten Provider.
 	- Colocación en mapa de un pin por cada tweet, cuyo icono es la imagen de perfil de Twitter del autor del tweet.
 	- Se puede ver el contenido de un tweet (autor/texto) pulsando sobre un pin.
+	- Presentar los tweets cercanos a la posicion del usuario (Floating Action Button): planteado.
 	
 **Issues pendientes**:  
 	- Buscar tweets a través de su contenido (dado un texto, mostrar los Tweets que lo contengan).  
 	- Presentar listado de Tweets además de sobre un mapa.  
-	- Presentar los tweets cercanos a la posicion del usuario (Floating Action Button): planteado.

@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/fab_elevation"
         android:src="@android:drawable/ic_menu_compass"
-        app:backgroundTint="@android:color/holo_red_light"
+        app:backgroundTint="@android:color/holo_blue_dark"
         app:borderWidth="0dp"
         app:elevation="@dimen/fab_elevation"
         app:layout_anchor="@id/map"
