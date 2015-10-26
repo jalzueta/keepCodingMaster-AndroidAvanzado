@@ -15,7 +15,7 @@
     <string name="authorize_this_app">Authorize this app</string>
 
     <string name="no_connection_dialog_title">No tienes conexión a Internet</string>
-    <string name="no_connection_dialog_message">Por favor, comprueba el estado de tu conexión a internet y vuélvelo a intentar</string>
+    <string name="no_connection_dialog_message">Por favor, comprueba el estado de tu conexión a internet y vuélvelo a intentar. Se cargarán los tweets de la última búsqueda realizada.</string>
     <string name="no_connection_button_text">Ok</string>
 
     <string name="location_request_dialog_title">Solicitud de posición</string>

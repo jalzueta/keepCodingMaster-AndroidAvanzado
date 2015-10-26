@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.fillingapps.twitt_nearby" >
+    package="com.fillingapps.twittnearby" >
 
     <!-- Permission - Internet Connect -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -12,7 +12,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <permission
-        android:name="com.fillingapps.twitt_nearby.permission.MAPS_RECEIVE"
+        android:name="com.fillingapps.twittnearby.permission.MAPS_RECEIVE"
         android:protectionLevel="signature" />
 
     <uses-permission android:name="com.fillingapps.twitt_nearby.permission.MAPS_RECEIVE" />
@@ -29,13 +29,13 @@
         android:required="true" />
 
     <application
-        android:name=".TwittnearbyApp"
+        android:name="com.fillingapps.twittnearby.TwittnearbyApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name=".activities.MainActivity"
+            android:name="com.fillingapps.twittnearby.activities.MainActivity"
             android:configChanges="orientation|screenSize"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
@@ -65,8 +65,8 @@
 
         <!-- Content providers -->
         <provider
-        android:name=".providers.TwittnearbyProvider"
-        android:authorities="com.fillingapps.twitt_nearby.provider" />
+        android:name="com.fillingapps.twittnearby.providers.TwittnearbyProvider"
+        android:authorities="com.fillingapps.twittnearby.provider" />
 
         <!-- Google Maps API Key -->
         <meta-data
